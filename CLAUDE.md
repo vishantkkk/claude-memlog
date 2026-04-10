@@ -19,15 +19,26 @@ When saving a new memory (explicit, organic, or via /memlog:save):
 4. **Calculate importance** — `TYPE_WEIGHT * SOURCE_WEIGHT` (feedback=1.0, user=0.9, reference=0.8, project=0.7, session=0.5; explicit=1.0, organic=0.9, session-summary=0.7).
 5. **Update MEMORY.md** — correct type section, `[i:score]` hint, keep under 100 active entries.
 
-## Two-Tier Recall
+## Three-Tier Recall
 
-1. **Active (MEMORY.md)** — always in context. Scan first.
-2. **Archive (ARCHIVE.md)** — search here when active memories don't answer the question.
-3. Never read memory files "just in case." Load only when specifically needed.
+1. **Personal active (MEMORY.md)** — user-specific preferences, identity, workflow. Scan first.
+2. **Team active (TEAM_MEMORY.md)** — shared conventions, project decisions, team references. Located at `<project-root>/.claude/memory/TEAM_MEMORY.md`. Check second.
+3. **Personal archive (ARCHIVE.md)** — search here when active memories don't answer the question.
+4. Never read memory files "just in case." Load only when specifically needed.
+
+## Team Memories
+
+Team memories live in `<project-root>/.claude/memory/` and are checked into git, making them visible to all contributors.
+
+- **What goes in team memory**: repo conventions (feedback type), architectural decisions, project-wide references, shared approach patterns.
+- **What stays personal**: user identity, personal preferences, individual workflow, session summaries.
+- Team memory files use the same frontmatter schema with an added `scope: team` field.
+- The team index is `TEAM_MEMORY.md` (same format as `MEMORY.md`).
+- If the project has no `.claude/memory/` directory, team memory is not available — everything saves personal.
 
 ## Proactive Surfacing
 
-When the user starts working on a topic, scan MEMORY.md for related memories. If found, surface 2-3 line summaries (not full files). Don't wait to be asked. Keep it to 3-4 lines. If context is already heavy, just mention memories exist — don't load them.
+When the user starts working on a topic, scan BOTH personal `MEMORY.md` and team `TEAM_MEMORY.md` for related memories. If found, surface 2-3 line summaries (not full files). Don't wait to be asked. Keep it to 3-4 lines. If context is already heavy, just mention memories exist — don't load them.
 
 ## Auto-Invoke Session Summary
 

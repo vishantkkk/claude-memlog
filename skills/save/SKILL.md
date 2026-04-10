@@ -64,7 +64,7 @@ Remove items that are:
 
 ## Step 3: Check Against Existing Memories
 
-Read `MEMORY.md` and for each remaining item:
+Read `MEMORY.md` (and `TEAM_MEMORY.md` if it exists) and for each remaining item:
 
 1. **Already captured?** → Skip. Note as "already in [filename]"
 2. **Updates existing memory?** → Flag for edit (not new file)
@@ -116,21 +116,84 @@ For each approved item, use the frontmatter schema in `schema.md`:
 
 **Handle contradiction**: per user's choice in Step 3.
 
-## Step 6: Update Index
+## Step 5b: Team Memory Routing
 
-- Add new entries to MEMORY.md in the correct type section
+Before writing files, determine where each approved item should be saved:
+
+1. **Check for team memory directory**: Does `<project-root>/.claude/memory/` exist?
+   - If NO → skip this step entirely. Save everything to personal `MEMORY_DIR` (default behavior).
+   - If YES → proceed to step 2.
+
+2. **For each item, ask the user**: "Is this personal or team-wide?"
+   - Present items grouped: "These look team-relevant: [list]. These look personal: [list]. Adjust?"
+   - Good candidates for **team**: feedback about repo conventions, project decisions, reference info, approach patterns that apply to all contributors.
+   - Good candidates for **personal**: user identity, personal preferences, individual workflow choices.
+
+3. **Route items**:
+   - **Personal** → save to `MEMORY_DIR` (existing behavior, `~/.claude/projects/<sanitized-cwd>/memory/`)
+   - **Team** → save to `<project-root>/.claude/memory/`
+     - If `TEAM_MEMORY.md` doesn't exist, create it with this template:
+       ```markdown
+       # Team Memory Index
+
+       ## Behavioral Rules (feedback)
+
+       ## Active Decisions (project)
+
+       ## References (reference)
+
+       ## Sessions (session)
+
+       ## Archived (see ARCHIVE.md for details)
+       ```
+     - Use the same frontmatter schema (schema.md) for team memory files
+     - Add an extra frontmatter field: `scope: team`
+     - Update `TEAM_MEMORY.md` index (same format as MEMORY.md, with `[i:score]` hints)
+
+4. **Naming**: Team memory files use the same naming convention (e.g., `feedback_[topic].md`, `session_[date]_[topic].md`) but are stored in the project `.claude/memory/` directory.
+
+## Step 6: Pattern Detection (Auto-Promote)
+
+After saving session memories, check if any extracted preference or correction is a recurring pattern:
+
+1. **Scan session history** — For each new preference/correction from Step 1, search `session_*.md` files in `$MEMORY_DIR` for matching topics. Match on:
+   - Same file or function names mentioned
+   - Same behavioral pattern (e.g., "don't use X", "always do Y")
+   - Same tool, library, or config references
+   Use simple keyword overlap — not semantic similarity.
+
+2. **Count occurrences** — If the same correction appears in **2 or more previous** session memories (excluding the current session):
+   ```
+   Pattern detected: "[correction summary]" has come up N times across sessions.
+   Previous occurrences: session_2026-03-15_topic.md, session_2026-04-01_topic.md
+   Promote to permanent feedback rule? (y/n)
+   ```
+
+3. **If approved** — Create `feedback_[topic].md` with:
+   - `type: feedback`, `source: organic`, importance = 0.90
+   - Content: synthesized rule with **Why:** and **How to apply:**
+   - Set the source session memories to `status: superseded`, `superseded_by: feedback_[topic].md`, importance → 0.20
+   - Move superseded entries to Archived section in MEMORY.md
+
+4. **If declined** — Save as normal session memory, no promotion.
+
+## Step 7: Update Index
+
+- Add new entries to the appropriate index:
+  - Personal items → `MEMORY.md` in `MEMORY_DIR`
+  - Team items → `TEAM_MEMORY.md` in `<project-root>/.claude/memory/`
 - Include `[i:score]` importance hint
 - Move superseded entries to Archived section
-- Keep total active entries under 100
+- Keep total active entries under 100 per index
 
-## Step 7: Smart Reminders
+## Step 8: Smart Reminders
 
 After saving, check:
 - If MEMORY.md has >80 entries: suggest `/memlog:clean`
 - If `.last_cleaned` is >28 days old: suggest cleanup
 - Scan saved memories for past dates (overdue items): flag them
 
-## Step 8: Context Nudge
+## Step 9: Context Nudge
 
 After saving:
 ```
@@ -139,7 +202,7 @@ Context is at ~X%. Since decisions are now in memory files,
 consider compacting (/compact) to free context space.
 ```
 
-## Step 9: Create Marker
+## Step 10: Create Marker
 
 As the FINAL step, create the session marker:
 ```bash
@@ -147,7 +210,7 @@ touch $MEMORY_DIR/.session_summarized
 ```
 This tells the Stop hook that a summary was saved this session.
 
-## Step 10: Report
+## Step 11: Report
 
 ```
 Session summary complete:

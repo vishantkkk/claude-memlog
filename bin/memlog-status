@@ -1,0 +1,87 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+
+# memlog-status — Status line script for Claude Code
+# Reads JSON from stdin ({"context_window":{"used_percentage":N}})
+# Outputs: N mems | X% | status
+
+# --- Read stdin (Claude Code pipes context JSON) ---
+input="$(cat)"
+
+# --- Extract context percentage (jq preferred, grep fallback) ---
+used_pct=0
+if command -v jq >/dev/null 2>&1; then
+  used_pct="$(printf '%s' "$input" | jq -r '.context_window.used_percentage // 0' 2>/dev/null || printf '0')"
+else
+  # Fallback: grep for the number after "used_percentage"
+  used_pct="$(printf '%s' "$input" | grep -o '"used_percentage"[[:space:]]*:[[:space:]]*[0-9.]*' | grep -o '[0-9.]*$' || printf '0')"
+fi
+# Truncate to integer (handles "42.7" -> "42")
+used_int="${used_pct%%.*}"
+# Guard against empty or non-numeric
+case "$used_int" in
+  ''|*[!0-9]*) used_int=0 ;;
+esac
+
+# --- Resolve memory directory from working directory ---
+CANONICAL_DIR="$(cd "$PWD" 2>/dev/null && pwd -P || printf '%s' "$PWD")"
+SANITIZED_CWD="$(printf '%s' "$CANONICAL_DIR" | tr '/' '-')"
+MEMORY_DIR="$HOME/.claude/projects/${SANITIZED_CWD}/memory"
+
+# Fallback: scan for directories containing project basename
+if [ ! -d "$MEMORY_DIR" ]; then
+  PROJECT_DIR="$(ls -d "$HOME/.claude/projects/"*"$(basename "$PWD")" 2>/dev/null | head -1 || true)"
+  if [ -n "${PROJECT_DIR:-}" ]; then
+    MEMORY_DIR="$PROJECT_DIR/memory"
+  fi
+fi
+
+# --- Count memory files (exclude index/archive/team files) ---
+mem_count=0
+clean_msg=""
+if [ -d "$MEMORY_DIR" ]; then
+  mem_count="$(find "$MEMORY_DIR" -maxdepth 1 -name '*.md' \
+    ! -name 'MEMORY.md' \
+    ! -name 'ARCHIVE.md' \
+    ! -name 'TEAM_MEMORY.md' \
+    2>/dev/null | wc -l | tr -d ' ')"
+
+  # --- Check cleanup age ---
+  if [ -f "$MEMORY_DIR/.last_cleaned" ]; then
+    # Portable file mtime: macOS uses stat -f, Linux uses stat -c
+    file_mtime=0
+    if stat -f %m "$MEMORY_DIR/.last_cleaned" >/dev/null 2>&1; then
+      file_mtime="$(stat -f %m "$MEMORY_DIR/.last_cleaned")"
+    elif stat -c %Y "$MEMORY_DIR/.last_cleaned" >/dev/null 2>&1; then
+      file_mtime="$(stat -c %Y "$MEMORY_DIR/.last_cleaned")"
+    fi
+    if [ "$file_mtime" -gt 0 ] 2>/dev/null; then
+      now="$(date +%s)"
+      days_ago="$(( (now - file_mtime) / 86400 ))"
+      if [ "$days_ago" -gt 28 ]; then
+        clean_msg=" | clean due (${days_ago}d)"
+      fi
+    fi
+  fi
+fi
+
+# --- Determine status based on context percentage ---
+status="fresh"
+if [ "$used_int" -ge 50 ]; then
+  status="/memlog:save then /compact"
+elif [ "$used_int" -ge 35 ]; then
+  status="save soon"
+elif [ "$used_int" -ge 20 ]; then
+  status="working"
+fi
+
+# --- Override if recently saved (within 30 minutes) ---
+if [ -d "$MEMORY_DIR" ] && [ -f "$MEMORY_DIR/.session_summarized" ]; then
+  if [ -n "$(find "$MEMORY_DIR/.session_summarized" -maxdepth 0 -mmin -30 2>/dev/null)" ]; then
+    status="saved, /compact"
+  fi
+fi
+
+# --- Output single status line ---
+printf '%d mems | %d%% | %s%s' "$mem_count" "$used_int" "$status" "$clean_msg"

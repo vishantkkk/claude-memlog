@@ -51,6 +51,51 @@ Scan conversation, extract knowledge, check contradictions, save to memory. Auto
 ### `/memlog:clean`
 Audit all memories for redundancy, staleness, and drift. Proposes KEEP, MERGE, ARCHIVE, or DELETE actions. Run every 2-4 weeks.
 
+## Status Line
+
+A persistent one-liner showing memory count, context usage, and recommended action. Runs after every Claude response so you always know when to save or compact.
+
+**Output format**: `N mems | X% | status`
+
+**Thresholds**:
+
+| Context % | Status | Meaning |
+|-----------|--------|---------|
+| 0-20% | `fresh` | Work freely, plenty of context remaining |
+| 20-35% | `working` | Normal usage, no action needed |
+| 35-50% | `save soon` | Consider `/memlog:save` before auto-compaction loses detail |
+| 50%+ | `/memlog:save then /compact` | Save memories then compact context now |
+| (recently saved) | `saved, /compact` | Save complete, run `/compact` to reclaim context |
+| (cleanup overdue) | appends `clean due (Nd)` | Run `/memlog:clean` -- last cleanup was N days ago |
+
+**Example output**:
+```
+28 mems | 8%  | fresh
+28 mems | 22% | working
+28 mems | 38% | save soon
+28 mems | 55% | /memlog:save then /compact
+30 mems | 42% | saved, /compact
+45 mems | 12% | fresh | clean due (32d)
+```
+
+**Setup**: Plugins cannot auto-register a status line. Add it once to your project or user `settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/plugins/cache/.../memlog/bin/memlog-status"
+  }
+}
+```
+
+To find the exact path after installing, run:
+```bash
+find ~/.claude/plugins/cache -name memlog-status -type f 2>/dev/null
+```
+
+If you already have a `statusLine` configured, you can pipe both commands together or replace yours with this one.
+
 ## Memory Types
 
 | Type | Weight | Use for |

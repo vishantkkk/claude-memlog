@@ -33,6 +33,19 @@ Or add to your project's `.claude/settings.json`:
 }
 ```
 
+**Optional: Enable the status line** (shows memory count, context %, and action nudges):
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/plugins/cache/.../memlog/bin/memlog-status"
+  }
+}
+```
+
+Find the exact path after installing: `find ~/.claude/plugins/cache -name memlog-status -type f 2>/dev/null`
+
 ## How It Works
 
 1. **During work**: Claude saves memories organically (corrections, decisions, preferences)

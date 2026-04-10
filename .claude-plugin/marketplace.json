@@ -1,0 +1,12 @@
+{
+  "name": "claude-memlog-marketplace",
+  "owner": { "name": "Vishant Kumar" },
+  "plugins": [
+    {
+      "name": "memlog",
+      "source": "./",
+      "description": "Structured memory with session summarization and contradiction detection",
+      "version": "1.0.0"
+    }
+  ]
+}

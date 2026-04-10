@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/memory-stop-check",
+            "timeout": 5,
+            "statusMessage": "Checking session summary..."
+          }
+        ]
+      }
+    ]
+  }
+}

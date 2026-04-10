@@ -1,0 +1,59 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+
+# Resolve memory directory from current working directory
+CANONICAL_DIR="$(cd "$PWD" 2>/dev/null && pwd -P || printf '%s' "$PWD")"
+SANITIZED_CWD="$(printf '%s' "$CANONICAL_DIR" | tr '/' '-')"
+MEMORY_DIR="$HOME/.claude/projects/${SANITIZED_CWD}/memory"
+
+# Fallback: scan for directories containing project basename
+if [ ! -d "$MEMORY_DIR" ]; then
+  PROJECT_DIR=$(ls -d "$HOME/.claude/projects/"*"$(basename "$PWD")" 2>/dev/null | head -1)
+  [ -n "${PROJECT_DIR:-}" ] && MEMORY_DIR="$PROJECT_DIR/memory"
+fi
+
+# Marker lives in memory dir (project-scoped, not plugin-scoped)
+MARKER_FILE="$MEMORY_DIR/.session_summarized"
+TRANSCRIPT_PATH="${TRANSCRIPT_PATH:-}"
+
+# Validate transcript path (security: prevent arbitrary file reads)
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+  exit 0
+fi
+# Ensure transcript is in expected location
+case "$TRANSCRIPT_PATH" in
+  /tmp/*|/private/tmp/*|"$HOME"/.claude/*) ;; # allowed
+  *) exit 0 ;; # reject unexpected paths
+esac
+
+# If memory dir doesn't exist, no memory system active — allow
+if [ ! -d "$MEMORY_DIR" ]; then
+  exit 0
+fi
+
+# If summary already ran this session (marker < 12 hours old), allow
+if [ -f "$MARKER_FILE" ]; then
+  if [ -n "$(find "$MARKER_FILE" -maxdepth 0 -mmin -720 2>/dev/null)" ]; then
+    exit 0
+  fi
+fi
+
+# Count tool uses as significance proxy
+TOOL_COUNT=$(grep -ac '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || printf '0')
+
+# Only trigger for significant sessions
+if [ "$TOOL_COUNT" -lt 8 ]; then
+  exit 0
+fi
+
+# Check if session-summary already invoked (skill creates marker on completion)
+if grep -q 'session.summary\|Session Summary\|memlog:save' "$TRANSCRIPT_PATH" 2>/dev/null; then
+  exit 0
+fi
+
+# Significant session without summary — block (exit 2)
+# NOTE: marker is NOT created here. The /memlog:save skill creates it
+# after successfully saving. This prevents "block once then give up."
+printf '{"decision":"block","reason":"Significant session (~%d tool calls). Run /memlog:save to capture decisions and preferences before ending."}\n' "$TOOL_COUNT"
+exit 2

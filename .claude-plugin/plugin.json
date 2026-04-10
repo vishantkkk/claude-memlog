@@ -1,0 +1,14 @@
+{
+  "name": "memlog",
+  "version": "1.0.0",
+  "description": "Structured memory with session summarization, contradiction detection, importance scoring, and two-tier storage for Claude Code",
+  "author": {
+    "name": "Vishant Kumar",
+    "email": "vishant@browserstack.com"
+  },
+  "repository": "https://github.com/vishant-browserstack/claude-memlog",
+  "license": "MIT",
+  "keywords": ["memory", "session", "knowledge", "persistence"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}

@@ -14,7 +14,7 @@ Structured memory system with session summarization, contradiction detection, im
 
 ```bash
 # Add the marketplace
-claude plugin marketplace add vishant-browserstack/claude-memlog
+claude plugin marketplace add vishantkk/claude-memlog
 
 # Install the plugin
 claude plugin install memlog@claude-memlog-marketplace
@@ -26,7 +26,7 @@ Or add to your project's `.claude/settings.json`:
 {
   "extraKnownMarketplaces": {
     "claude-memlog-marketplace": {
-      "source": { "source": "github", "repo": "vishant-browserstack/claude-memlog" }
+      "source": { "source": "github", "repo": "vishantkk/claude-memlog" }
     }
   },
   "enabledPlugins": { "memlog@claude-memlog-marketplace": true }

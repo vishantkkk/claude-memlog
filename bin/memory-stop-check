@@ -52,8 +52,8 @@ if grep -q 'session.summary\|Session Summary\|memlog:save' "$TRANSCRIPT_PATH" 2>
   exit 0
 fi
 
-# Significant session without summary — block (exit 2)
-# NOTE: marker is NOT created here. The /memlog:save skill creates it
-# after successfully saving. This prevents "block once then give up."
-printf '{"decision":"block","reason":"Significant session (~%d tool calls). Run /memlog:save to capture decisions and preferences before ending."}\n' "$TOOL_COUNT"
-exit 2
+# Significant session without summary — warn via stderr, exit 0
+# Stop hooks can't block (conversation is ending), so exit 2 just
+# produces a noisy "Failed with non-blocking status code" error.
+printf 'memlog: Session had ~%d tool calls without /memlog:save. No action needed — run /memlog:save next session if you want to preserve decisions.\n' "$TOOL_COUNT" >&2
+exit 0

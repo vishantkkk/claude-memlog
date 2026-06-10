@@ -9,6 +9,5 @@
   "repository": "https://github.com/vishantkk/claude-memlog",
   "license": "MIT",
   "keywords": ["memory", "session", "knowledge", "persistence"],
-  "skills": "./skills/",
-  "hooks": "./hooks/hooks.json"
+  "skills": "./skills/"
 }

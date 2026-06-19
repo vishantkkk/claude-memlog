@@ -92,7 +92,7 @@ Proceed? [y/n/select specific items]
 
 1. Rewrite MEMORY.md — grouped by type, sorted by importance
 2. Rewrite ARCHIVE.md with updated entries
-3. Verify MEMORY.md active entries <= 100
+3. Verify MEMORY.md < 22KB AND active entries <= 180 (bytes bind first — the harness loads only ~24KB)
 4. Check for orphans (files not in any index, or index refs to missing files)
 
 ## Phase 5: Write Cleanup Marker
@@ -114,7 +114,7 @@ touch $MEMORY_DIR/.last_cleaned
 ### Health
 - Active memories: N (was M)
 - Archived memories: N (was M)
-- Index lines: N/100
+- Index lines: N/180  | MEMORY.md size: NkB/24kB
 - Next cleanup recommended: [date + 4 weeks]
 ```
 

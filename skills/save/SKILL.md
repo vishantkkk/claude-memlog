@@ -184,12 +184,12 @@ After saving session memories, check if any extracted preference or correction i
   - Team items → `TEAM_MEMORY.md` in `<project-root>/.claude/memory/`
 - Include `[i:score]` importance hint
 - Move superseded entries to Archived section
-- Keep total active entries under 100 per index
+- Keep total active entries under 180 per index, AND MEMORY.md under ~22KB (the harness loads only ~24KB at session start — BYTES bind before count; tighten index lines before dropping entries)
 
 ## Step 8: Smart Reminders
 
 After saving, check:
-- If MEMORY.md has >80 entries: suggest `/memlog:clean`
+- If MEMORY.md > 20KB OR > 160 entries: suggest `/memlog:clean`
 - If `.last_cleaned` is >28 days old: suggest cleanup
 - Scan saved memories for past dates (overdue items): flag them
 
